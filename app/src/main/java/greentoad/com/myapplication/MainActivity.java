@@ -32,6 +32,9 @@ public class MainActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+
+        ExecuteRestService();
+
         lstNames = (ListView) findViewById(R.id.lstNames);
         Names=new ArrayList<String>();
         Names.add ("Nelo");
