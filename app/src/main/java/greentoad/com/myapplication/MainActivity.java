@@ -10,19 +10,23 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.protocol.BasicHttpContext;
-import org.apache.http.protocol.HttpContext;
 
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
-import java.util.List;
 
 
 public class MainActivity extends ActionBarActivity {
 
     ArrayList<String> Names;
     ListView lstNames;
+
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -65,12 +69,27 @@ public class MainActivity extends ActionBarActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    private void ExecuteRestService(){
+    private void ExecuteRestService() {
+        HttpURLConnection urlConnection;
 
+        try {
+            URL myurl = new URL("http://www.android.com/");
 
+        try {
+            urlConnection = (HttpURLConnection) myurl.openConnection();
+            InputStream in = new BufferedInputStream(urlConnection.getInputStream());
+            //readStream(in);
+        }
+        catch (IOException Ex){
 
+        }
+
+        } catch (MalformedURLException Ex) {
+
+        }
 
     }
+
 
     private boolean NetworkIsConnected(){
 
