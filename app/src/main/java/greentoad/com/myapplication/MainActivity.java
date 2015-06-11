@@ -1,8 +1,9 @@
 package greentoad.com.myapplication;
 
-import android.annotation.SuppressLint;
+import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.AsyncTask;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -12,34 +13,34 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
+
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
 
-import android.app.Activity;
-import android.app.ProgressDialog;
-import android.content.Intent;
-import android.os.Bundle;
+
 import android.view.View;
 import android.widget.EditText;
-import android.widget.TextView;
 import android.widget.Toast;
 
+
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 
 
-public class MainActivity extends ActionBarActivity {
+public class MainActivity extends ActionBarActivity implements View.OnClickListener,View.OnFocusChangeListener {
 
     ArrayList<String> Names;
     ListView lstNames;
 
+    private EditText DNI=null;
+    private EditText nombre=null;
+    private EditText apellido=null;
+    private EditText telefono=null;
+    private EditText SIP=null;
 
 
     @Override
@@ -77,21 +78,17 @@ public class MainActivity extends ActionBarActivity {
 
     private boolean NetworkIsConnected(){
 
-        ConnectivityManager connMgr = (ConnectivityManager)getSystemService(this.CONNECTIVITY_SERVICE);
+        ConnectivityManager connMgr = (ConnectivityManager)getSystemService(CONNECTIVITY_SERVICE);
 
         NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
 
-        if (networkInfo != null && networkInfo.isConnected()) {
-            return true;
-        } else {
-            return false;
-        }
+        return networkInfo != null && networkInfo.isConnected();
     }
 
     private void GenerateList(){
 
         //lstNames = (ListView) findViewById(R.id.lstNames);
-        Names=new ArrayList<String>();
+        Names= new ArrayList<>();
         Names.add ("Nelo");
         Names.add("Ana");
         Names.add("Alfredo");
@@ -105,38 +102,25 @@ public class MainActivity extends ActionBarActivity {
 
     }
 
-
-    public void httpSendData(String mURL) {
+public String httpGetData(String mURL) {
         HttpURLConnection urlConnection=null;
+        InputStream stream = null;
         try {
+
             URL url = new URL(mURL);
             urlConnection = (HttpURLConnection) url.openConnection();
-            urlConnection.disconnect();
-
-        }
-        catch (MalformedURLException ex) {
-            Log.e("httptest", Log.getStackTraceString(ex));
-        }
-        catch (IOException ex) {
-            Log.e("httptest", Log.getStackTraceString(ex));
-        }
-        finally {
             try {
-                urlConnection.disconnect();
-            } catch (Exception e) {
-                e.printStackTrace(); //If you want further info on failure...
+                urlConnection.setRequestMethod("GET");
+                urlConnection.connect();
+
+                if (urlConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                    stream = urlConnection.getInputStream();
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
             }
-        }
-    }
-
-
-    public String httpGetData(String mURL) {
-        HttpURLConnection urlConnection=null;
-        try {
-            URL url = new URL(mURL);
-            urlConnection = (HttpURLConnection) url.openConnection();
-            urlConnection.disconnect();
             return("Hello");
+
         }
         catch (MalformedURLException ex) {
             Log.e("httptest", Log.getStackTraceString(ex));
@@ -155,70 +139,165 @@ public class MainActivity extends ActionBarActivity {
         }
     }
 
+
+
+   //Métodos Privados
+
+    private void InsertarUsuario(String numDNI,String nomb,String ape,String telef ,String numSIP){
+        boolean Conected=NetworkIsConnected();
+        if (Conected==true) {
+
+            httpSendDataTask Request=new httpSendDataTask();
+            httpSendDataTask.Result Res;
+
+            Request.execute("http://10.0.2.2/prueba/registrarUsuario.php?DNI=" + numDNI +
+                    "&Nombre=" + nomb + "&Apellido=" + ape +
+                    "&Telefono=" + telef + "&SIP=" + numSIP);
+
+        }
+    }
 
     private void EnlazarControlesXML(){
         Button b1=(Button)findViewById(R.id.button1);
-        final EditText DNI=(EditText)findViewById(R.id.editTextCedula);
-        final EditText nombre=(EditText)findViewById(R.id.editTextNombre);
-        final EditText apellido=(EditText)findViewById(R.id.editTextApellido);
-        final EditText telefono=(EditText)findViewById(R.id.editTextTelefono);
-        final EditText SIP=(EditText)findViewById(R.id.editTextSIP);
+        DNI=(EditText)findViewById(R.id.editTextCedula);
+        nombre=(EditText)findViewById(R.id.editTextNombre);
+        apellido=(EditText)findViewById(R.id.editTextApellido);
+        telefono=(EditText)findViewById(R.id.editTextTelefono);
+        SIP=(EditText)findViewById(R.id.editTextSIP);
 
-        b1.setOnClickListener(new View.OnClickListener() {
+        //Valores por defecto
+        DNI.setText("24354676Q");
+        nombre.setText("PEPE");
+        apellido.setText("LEAL");
+        telefono.setText("965874125");
+        SIP.setText("00125478");
 
-            @SuppressLint("ShowToast")
-            @Override
-            public void onClick(View v) {
-                // TODO Auto-generated method stub
-                try{
-                    httpSendData("http://10.0.2.2/prueba/registrarUsuario.php?DNI=" + DNI.getText() +
-                            "&Nombre=" + nombre.getText() + "&Apellido=" + apellido.getText() +
-                            "&Telefono=" + telefono.getText() + "&SIP=" + SIP.getText() );
-                            Toast.makeText(getApplicationContext(), "El dato ha sido enviado correctamente", Toast.LENGTH_LONG).show();
-                }catch(Exception e){
-                    Toast.makeText(getApplicationContext(), "Error en el envio de la informacion, verifique su conexion a internet y vuelva a intentarlo.", Toast.LENGTH_LONG).show();
 
-                }
+        b1.setOnClickListener(this);
+        DNI.setOnFocusChangeListener(this);
+
+    }
+
+
+    // Eventos
+
+    public void onClick(View view) {
+        try{
+
+           InsertarUsuario(DNI.getText().toString(),nombre.getText().toString(), apellido.getText().toString(), telefono.getText().toString(),SIP.getText().toString());
+
+        }catch(Exception e){
+
+            Toast.makeText(getApplicationContext(), "Error en el envio de la informacion, verifique su conexion a internet y vuelva a intentarlo.", Toast.LENGTH_LONG).show();
+
+        }
+    }
+
+    public void onFocusChange(View view,boolean hasFocus){
+
+        if(hasFocus==false){
+            JSONArray ja=null;
+            try {
+                String data;
+                data=httpGetData("http://10.0.2.2/prueba/consultarUsuario.php?cc="+DNI.getText());
+                if(data.length()>1)
+                    ja=new JSONArray(data);
+
+
+            } catch (JSONException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+                Toast.makeText(getApplicationContext(), "Error recuperando la informacion del servidor, verifique su conexion a internet y vuelva a intentarlo.", Toast.LENGTH_LONG).show();
 
             }
-        });
+            try{
+                nombre.setText(ja.getString(1));
+                apellido.setText(ja.getString(2));
+                telefono.setText(ja.getString(3));
+                SIP.setText(ja.getString(4));
+            } catch (Exception e) {
 
-        DNI.setOnFocusChangeListener(new View.OnFocusChangeListener() {
-
-            @Override
-            public void onFocusChange(View v, boolean hasFocus) {
-                // TODO Auto-generated method stub
-                if(hasFocus==false){
-                    JSONArray ja=null;
-                    try {
-                        String data;
-                        data=httpGetData("http://10.0.2.2/prueba/consultarUsuario.php?cc="+DNI.getText());
-                        if(data.length()>1)
-                            ja=new JSONArray(data);
+                nombre.setText("");
+                apellido.setText("");
+                SIP.setText("");
+                telefono.setText("");
+            }
+        }
 
 
-                    } catch (JSONException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
-                        Toast.makeText(getApplicationContext(), "Error recuperando la informacion del servidor, verifique su conexion a internet y vuelva a intentarlo.", Toast.LENGTH_LONG).show();
 
-                    }
-                    try{
+    }
 
-                        nombre.setText(ja.getString(1));
-                        apellido.setText(ja.getString(2));
-                        telefono.setText(ja.getString(3));
-                        SIP.setText(ja.getString(4));
-                    } catch (Exception e) {
 
-                        nombre.setText("");
-                        apellido.setText("");
-                        SIP.setText("");
-                        telefono.setText("");
-                    }
+    private class httpSendDataTask extends AsyncTask<String, Void, httpSendDataTask.Result> {
+        @Override
+        protected Result doInBackground(String... url) {
+            Result output;
+            output=httpSendData(url[0]);
+            return output;
+        }
+
+        public class Result {
+
+            public int ResultCode;
+            public String Message;
+
+            public Result (int code,String Mess){
+                ResultCode=code;
+                Message=Mess;
+                            }
+
+        }
+
+        @Override
+        protected void onPostExecute(Result R){
+            if (R.ResultCode==HttpURLConnection.HTTP_OK) {
+                Toast.makeText(getApplicationContext(), "El dato ha sido enviado correctamente", Toast.LENGTH_LONG).show();
+            }
+            else
+            {
+                Toast.makeText(getApplicationContext(), "No se ha podido insertar el usuario", Toast.LENGTH_LONG).show();
+            }
+        }
+
+        // Métodos de invocacion de Servicio WEB
+
+        public Result httpSendData(String mURL) {
+            HttpURLConnection urlConnection=null;
+            try {
+                URL url = new URL(mURL);
+                urlConnection = (HttpURLConnection) url.openConnection();
+                try {
+                    urlConnection.setRequestMethod("GET");
+                    urlConnection.connect();
+
+                    return new Result(urlConnection.getResponseCode(),"");
+                }
+                catch (Exception ex) {
+                    ex.printStackTrace();
+                    return new Result(HttpURLConnection.HTTP_INTERNAL_ERROR,ex.getMessage());
                 }
             }
-        });
+            catch (MalformedURLException ex) {
+                Log.e("httptest", Log.getStackTraceString(ex));
+                return new Result(HttpURLConnection.HTTP_BAD_REQUEST,ex.getMessage());
+            }
+            catch (IOException ex) {
+                Log.e("httptest", Log.getStackTraceString(ex));
+                return new Result(HttpURLConnection.HTTP_FORBIDDEN,ex.getMessage());
+            }
+            finally {
+                try {
+                    urlConnection.disconnect();
+                } catch (Exception e) {
+                    e.printStackTrace(); //If you want further info on failure...
+                }
+            }
+        }
+
+
+
+
     }
 
 }
