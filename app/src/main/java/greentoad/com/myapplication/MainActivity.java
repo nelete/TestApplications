@@ -21,6 +21,7 @@ import org.json.JSONObject;
 
 import android.view.View;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 
@@ -44,9 +45,11 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     private EditText apellido=null;
     private EditText telefono=null;
     private EditText SIP=null;
+    private EditText JsonText=null;
 
     final String LocalCall= "http://10.0.2.2/ToadService/GetUserByDNI.php?DNI=";
-    final String RemoteCall= "http://greentoad.esy.es/Prueba/ConsultarUsuario.php?DNI=";
+    final String RemoteCall= "http://greentoad.esy.es/ToadService/GetUserByDNI.php?DNI=";
+    final String UsersCall="http://greentoad.esy.es/ToadService/GetUsers.php";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,20 +93,33 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         return networkInfo != null && networkInfo.isConnected();
     }
 
-    private void GenerateList(){
+    private void GenerateList(JSONArray Array){
 
-        //lstNames = (ListView) findViewById(R.id.lstNames);
+        lstNames = (ListView) findViewById(R.id.lstNames);
         Names= new ArrayList<>();
-        Names.add ("Nelo");
-        Names.add("Ana");
-        Names.add("Alfredo");
-        Names.add("Olga");
-        Names.add("Juan");
-        Names.add("Santi");
+
+        for(int i = 0 ; i < Array.length(); i++){
+
+            try {
+
+                JSONObject obj=Array.getJSONObject(i);
+                if (obj!=null) {
+
+                    Names.add(obj.getString("DNI") + " " + obj.getString("nombre") + " " + obj.getString("apellido1") );
+
+                }
+
+            } catch (JSONException e) {
+
+                Toast.makeText(getApplicationContext(), "No se ha podido realizar la consulta", Toast.LENGTH_LONG).show();
+
+            }
+
+        }
 
         ArrayAdapter<String> adapter;
-        //adapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,Names);
-        //lstNames.setAdapter(adapter);
+        adapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,Names);
+        lstNames.setAdapter(adapter);
 
     }
 
@@ -125,21 +141,21 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
     private void EnlazarControlesXML(){
         Button b1=(Button)findViewById(R.id.button1);
+        Button btnConsultar=(Button)findViewById(R.id.btnConsultar);
         DNI=(EditText)findViewById(R.id.editTextCedula);
         nombre=(EditText)findViewById(R.id.editTextNombre);
         apellido=(EditText)findViewById(R.id.editTextApellido);
         telefono=(EditText)findViewById(R.id.editTextTelefono);
         SIP=(EditText)findViewById(R.id.editTextSIP);
+        //JsonText=(EditText)findViewById(R.id.jsonText);
 
         //Valores por defecto
-        DNI.setText("24354676Q");
-        nombre.setText("PEPE");
-        apellido.setText("LEAL");
-        telefono.setText("965874125");
-        SIP.setText("00125478");
+        DNI.setText("123456");
+
 
 
         b1.setOnClickListener(this);
+        btnConsultar.setOnClickListener(this);
         DNI.setOnFocusChangeListener(this);
 
     }
@@ -149,9 +165,14 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
     public void onClick(View view) {
         try{
-
-           InsertarUsuario(DNI.getText().toString(),nombre.getText().toString(), apellido.getText().toString(), telefono.getText().toString(),SIP.getText().toString());
-
+            switch (view.getId()) {
+                case R.id.button1:
+                    InsertarUsuario(DNI.getText().toString(), nombre.getText().toString(), apellido.getText().toString(), telefono.getText().toString(), SIP.getText().toString());
+                    break;
+                case R.id.btnConsultar:
+                    GetUsers();
+                    break;
+            }
         }catch(Exception e){
 
             Toast.makeText(getApplicationContext(), "Error en el envio de la informacion, verifique su conexion a internet y vuelva a intentarlo.", Toast.LENGTH_LONG).show();
@@ -169,22 +190,41 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     }
 
 
-    private void GetUserByDNI(String DNI) {
+    private void GetUsers() {
 
         boolean Conected = NetworkIsConnected();
         if (Conected ) {
 
-            httpGetDataTask Request = new httpGetDataTask();
-            httpGetDataTask.Result Res=null;
-            //http://localhost/ToadService/GetUserByDNI.php?DNI
-            //http://greentoad.esy.es/Prueba/ConsultarUsuario.php?DNI
+            httpGetUsersTask Request = new httpGetUsersTask();
+            httpGetUsersTask.Result Res=null;
+            Request.execute(UsersCall);
+
+        }
+    }
+
+    private void GetUserByDNI(String DNI) {
+
+        boolean Conected = NetworkIsConnected();
+        if (Conected ) {
+            Clean();
+            httpGetUserByDNITask Request = new httpGetUserByDNITask();
+            httpGetUserByDNITask.Result Res=null;
             Request.execute(RemoteCall + DNI);
 
         }
     }
 
+    private void Clean(){
 
-    private class httpGetDataTask extends AsyncTask<String,Void,httpGetDataTask.Result> {
+        nombre.setText("");
+        apellido.setText("");
+        SIP.setText("");
+        telefono.setText("");
+        //JsonText.setText("");
+    }
+
+
+    private class httpGetUsersTask extends AsyncTask<String,Void,httpGetUsersTask.Result> {
 
         @Override
         protected Result doInBackground(String... url) {
@@ -210,26 +250,14 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         @Override
         protected void onPostExecute(Result R) {
             if (R.ResultCode == HttpURLConnection.HTTP_OK) {
+                //JsonText.setText(R.Response.toString());
                 if ( R!= null) {
-                    try {
-                        JSONObject obj=R.Response.getJSONObject(0);
-                        if (obj!=null) {
 
-                            nombre.setText(obj.getString("nombre"));
-                            apellido.setText(obj.getString("apellido1"));
-                            telefono.setText(obj.getString("DNI"));
-                            SIP.setText(obj.getString("permisos"));
-                        }
+                    GenerateList(R.Response);
 
-                    } catch (JSONException e) {
-
-                        nombre.setText("");
-                        apellido.setText("");
-                        SIP.setText("");
-                        telefono.setText("");
-                    }
+                } else{
+                    Toast.makeText(getApplicationContext(), "La consulta no ha devuelto ningun resultado", Toast.LENGTH_LONG).show();
                 }
-                Toast.makeText(getApplicationContext(), "El dato ha sido traido correctamente", Toast.LENGTH_LONG).show();
             } else {
                 Toast.makeText(getApplicationContext(), "No se ha podido realizarla consulta", Toast.LENGTH_LONG).show();
             }
@@ -293,8 +321,6 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         }
 
     }
-
-
 
 
     private class httpSendDataTask extends AsyncTask<String, Void, httpSendDataTask.Result> {
@@ -366,6 +392,117 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     }
 
 
+    private class httpGetUserByDNITask extends AsyncTask<String,Void,httpGetUserByDNITask.Result> {
+
+        @Override
+        protected Result doInBackground(String... url) {
+            Result output;
+            output = httpGetData(url[0]);
+            return output;
+        }
+
+        public class Result {
+
+            public JSONArray Response;
+            public int ResultCode;
+            public String Message;
+
+            public Result(JSONArray Resp, int code, String Mess) {
+                Response = Resp;
+                ResultCode = code;
+                Message = Mess;
+            }
+
+        }
+
+        @Override
+        protected void onPostExecute(Result R) {
+            if (R.ResultCode == HttpURLConnection.HTTP_OK) {
+                //JsonText.setText(R.Response.toString());
+                if ( R!= null) {
+                    try {
+                        JSONObject obj=R.Response.getJSONObject(0);
+                        if (obj!=null) {
+
+                            nombre.setText(obj.getString("nombre"));
+                            apellido.setText(obj.getString("apellido1"));
+                            telefono.setText(obj.getString("DNI"));
+                            SIP.setText(obj.getString("permisos"));
+                            Toast.makeText(getApplicationContext(), "El dato ha sido traido correctamente", Toast.LENGTH_LONG).show();
+                        }
+
+                    } catch (JSONException e) {
+
+                        Toast.makeText(getApplicationContext(), "No se ha podido realizar la consulta", Toast.LENGTH_LONG).show();
+
+                    }
+
+                } else{
+                    Toast.makeText(getApplicationContext(), "La consulta no ha devuelto ningun resultado", Toast.LENGTH_LONG).show();
+                }
+            } else {
+                Toast.makeText(getApplicationContext(), "No se ha podido realizarla consulta", Toast.LENGTH_LONG).show();
+            }
+        }
+
+
+        private Result httpGetData(String mURL) {
+
+            HttpURLConnection urlConnection = null;
+            JSONArray ja = null;
+            Result Res=null;
+
+            try {
+
+                URL url = new URL(mURL);
+                urlConnection = (HttpURLConnection) url.openConnection();
+
+                try {
+                    urlConnection.setRequestMethod("GET");
+                    urlConnection.setDoOutput(true);
+                    urlConnection.connect();
+
+
+                    BufferedReader in = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
+
+                    String line;
+
+
+                    while ((line = in.readLine()) != null) {
+                        try {
+                            ja = new JSONArray(line);
+                            Res= new Result(ja, HttpURLConnection.HTTP_OK, null);
+                        } catch (JSONException ex) {
+                            ex.printStackTrace();
+                            Toast.makeText(getApplicationContext(), "Error recuperando la respuesta del servidor.", Toast.LENGTH_LONG).show();
+                            Res= new Result(null, HttpURLConnection.HTTP_BAD_REQUEST, ex.getMessage());
+                        }
+                    }
+                }
+                //return new Result(urlConnection.getResponseCode(),"");
+                catch (Exception ex) {
+                    ex.printStackTrace();
+                    Toast.makeText(getApplicationContext(), "Error accediendo al servidor.", Toast.LENGTH_LONG).show();
+                    Res= new Result(null, HttpURLConnection.HTTP_BAD_REQUEST, ex.getMessage());
+                }
+
+            } catch (MalformedURLException ex) {
+                Log.e("httptest", Log.getStackTraceString(ex));
+                Res=new Result(null, HttpURLConnection.HTTP_NOT_ACCEPTABLE, ex.getMessage());
+                //return new Result(HttpURLConnection.HTTP_BAD_REQUEST,ex.getMessage());
+            } catch (IOException ex) {
+                Log.e("httptest", Log.getStackTraceString(ex));
+                Res= new Result(null, HttpURLConnection.HTTP_NOT_ACCEPTABLE, ex.getMessage());
+                //return new Result(HttpURLConnection.HTTP_FORBIDDEN,ex.getMessage());
+
+            } finally {
+
+                urlConnection.disconnect();
+                return Res;
+            }
+        }
+
+    }
 
 
 }
