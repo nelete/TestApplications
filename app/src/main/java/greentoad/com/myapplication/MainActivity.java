@@ -40,18 +40,8 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     ArrayList<String> Names;
     ListView lstNames;
 
-    private EditText DNI=null;
-    private EditText nombre=null;
-    private EditText apellido=null;
-    private EditText telefono=null;
-    private EditText SIP=null;
-    private EditText JsonText=null;
 
-    final String LocalCall= "http://10.0.2.2/ToadService/GetUserByDNI.php?DNI=";
-    final String RemoteCall= "http://greentoad.esy.es/ToadService/GetUserByDNI.php?DNI=";
-    final String UsersCall="http://greentoad.esy.es/ToadService/GetUsers.php";
 
-    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -80,15 +70,6 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         }
 
         return super.onOptionsItemSelected(item);
-    }
-
-    private boolean NetworkIsConnected(){
-
-        ConnectivityManager connMgr = (ConnectivityManager)getSystemService(CONNECTIVITY_SERVICE);
-
-        NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
-
-        return networkInfo != null && networkInfo.isConnected();
     }
 
     private void GenerateList(JSONArray Array){
@@ -123,50 +104,28 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
     private void Clean(){
 
-        nombre.setText("");
+       /* nombre.setText("");
         apellido.setText("");
         SIP.setText("");
-        telefono.setText("");
+        telefono.setText("");*/
         //JsonText.setText("");
     }
 
     private void EnlazarControlesXML(){
         Button b1=(Button)findViewById(R.id.button1);
         Button btnConsultar=(Button)findViewById(R.id.btnConsultar);
-        DNI=(EditText)findViewById(R.id.editTextCedula);
-        nombre=(EditText)findViewById(R.id.editTextNombre);
-        apellido=(EditText)findViewById(R.id.editTextApellido);
-        telefono=(EditText)findViewById(R.id.editTextTelefono);
-        SIP=(EditText)findViewById(R.id.editTextSIP);
         //JsonText=(EditText)findViewById(R.id.jsonText);
 
         //Valores por defecto
-        DNI.setText("123456");
+        //DNI.setText("123456");
 
 
 
         b1.setOnClickListener(this);
         btnConsultar.setOnClickListener(this);
-        DNI.setOnFocusChangeListener(this);
+        //DNI.setOnFocusChangeListener(this);
 
     }
-
-
-    //Métodos Privados
-
-    private void InsertarUsuario(String numDNI,String nomb,String ape,String telef ,String numSIP){
-        boolean Conected=NetworkIsConnected();
-        if (Conected) {
-
-            httpSendDataTask Request=new httpSendDataTask();
-
-            Request.execute("http://10.0.2.2/prueba/registrarUsuario.php?DNI=" + numDNI +
-                    "&Nombre=" + nomb + "&Apellido=" + ape +
-                    "&Telefono=" + telef + "&SIP=" + numSIP);
-
-        }
-    }
-
 
     // Eventos
 
@@ -174,10 +133,10 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         try{
             switch (view.getId()) {
                 case R.id.button1:
-                    InsertarUsuario(DNI.getText().toString(), nombre.getText().toString(), apellido.getText().toString(), telefono.getText().toString(), SIP.getText().toString());
+                    //InsertarUsuario(DNI.getText().toString(), nombre.getText().toString(), apellido.getText().toString(), telefono.getText().toString(), SIP.getText().toString());
                     break;
                 case R.id.btnConsultar:
-                    GetUsers();
+                    //GetUsers();
                     break;
             }
         }catch(Exception e){
@@ -190,318 +149,15 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     public void onFocusChange(View view,boolean hasFocus){
         if(hasFocus==false){
 
-            GetUserByDNI(DNI.getText().toString());
+            //GetUserByDNI(DNI.getText().toString());
 
         }
 
     }
 
 
-    private void GetUsers() {
 
-        boolean Conected = NetworkIsConnected();
-        if (Conected ) {
 
-            httpGetUsersTask Request = new httpGetUsersTask();
-            httpGetUsersTask.Result Res=null;
-            Request.execute(UsersCall);
-
-        }
-    }
-
-    private void GetUserByDNI(String DNI) {
-
-        boolean Conected = NetworkIsConnected();
-        if (Conected ) {
-            Clean();
-            httpGetUserByDNITask Request = new httpGetUserByDNITask();
-            httpGetUserByDNITask.Result Res=null;
-            Request.execute(RemoteCall + DNI);
-
-        }
-    }
-
-
-
-    private class httpGetUsersTask extends AsyncTask<String,Void,httpGetUsersTask.Result> {
-
-        @Override
-        protected Result doInBackground(String... url) {
-            Result output;
-            output = httpGetData(url[0]);
-            return output;
-        }
-
-        public class Result {
-
-            public JSONArray Response;
-            public int ResultCode;
-            public String Message;
-
-            public Result(JSONArray Resp, int code, String Mess) {
-                Response = Resp;
-                ResultCode = code;
-                Message = Mess;
-            }
-
-        }
-
-        @Override
-        protected void onPostExecute(Result R) {
-            if (R.ResultCode == HttpURLConnection.HTTP_OK) {
-                //JsonText.setText(R.Response.toString());
-                if ( R!= null) {
-
-                    GenerateList(R.Response);
-
-                } else{
-                    Toast.makeText(getApplicationContext(), "La consulta no ha devuelto ningun resultado", Toast.LENGTH_LONG).show();
-                }
-            } else {
-                Toast.makeText(getApplicationContext(), "No se ha podido realizarla consulta", Toast.LENGTH_LONG).show();
-            }
-        }
-
-
-        private Result httpGetData(String mURL) {
-
-            HttpURLConnection urlConnection = null;
-            JSONArray ja = null;
-            Result Res=null;
-
-            try {
-
-                URL url = new URL(mURL);
-                urlConnection = (HttpURLConnection) url.openConnection();
-
-                try {
-                    urlConnection.setRequestMethod("GET");
-                    urlConnection.setDoOutput(true);
-                    urlConnection.connect();
-
-
-                    BufferedReader in = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
-
-                    String line;
-
-
-                    while ((line = in.readLine()) != null) {
-                        try {
-                            ja = new JSONArray(line);
-                            Res= new Result(ja, HttpURLConnection.HTTP_OK, null);
-                        } catch (JSONException ex) {
-                            ex.printStackTrace();
-                            Toast.makeText(getApplicationContext(), "Error recuperando la respuesta del servidor.", Toast.LENGTH_LONG).show();
-                            Res= new Result(null, HttpURLConnection.HTTP_BAD_REQUEST, ex.getMessage());
-                        }
-                    }
-                }
-                //return new Result(urlConnection.getResponseCode(),"");
-                catch (Exception ex) {
-                    ex.printStackTrace();
-                    Toast.makeText(getApplicationContext(), "Error accediendo al servidor.", Toast.LENGTH_LONG).show();
-                    Res= new Result(null, HttpURLConnection.HTTP_BAD_REQUEST, ex.getMessage());
-                }
-
-            } catch (MalformedURLException ex) {
-                Log.e("httptest", Log.getStackTraceString(ex));
-                Res=new Result(null, HttpURLConnection.HTTP_NOT_ACCEPTABLE, ex.getMessage());
-                //return new Result(HttpURLConnection.HTTP_BAD_REQUEST,ex.getMessage());
-            } catch (IOException ex) {
-                Log.e("httptest", Log.getStackTraceString(ex));
-                Res= new Result(null, HttpURLConnection.HTTP_NOT_ACCEPTABLE, ex.getMessage());
-                //return new Result(HttpURLConnection.HTTP_FORBIDDEN,ex.getMessage());
-
-            } finally {
-
-                urlConnection.disconnect();
-                return Res;
-            }
-        }
-
-    }
-
-
-    private class httpSendDataTask extends AsyncTask<String, Void, httpSendDataTask.Result> {
-        @Override
-        protected Result doInBackground(String... url) {
-            Result output;
-            output=httpSendData(url[0]);
-            return output;
-        }
-
-        public class Result {
-
-            public int ResultCode;
-            public String Message;
-
-            public Result (int code,String Mess){
-                ResultCode=code;
-                Message=Mess;
-                            }
-
-        }
-
-        @Override
-        protected void onPostExecute(Result R){
-            if (R.ResultCode==HttpURLConnection.HTTP_OK) {
-                Toast.makeText(getApplicationContext(), "El dato ha sido enviado correctamente", Toast.LENGTH_LONG).show();
-            }
-            else
-            {
-                Toast.makeText(getApplicationContext(), "No se ha podido insertar el usuario", Toast.LENGTH_LONG).show();
-            }
-        }
-
-        // Métodos de invocacion de Servicio WEB
-
-        public Result httpSendData(String mURL) {
-            HttpURLConnection urlConnection=null;
-            try {
-                URL url = new URL(mURL);
-                urlConnection = (HttpURLConnection) url.openConnection();
-                try {
-                    urlConnection.setRequestMethod("GET");
-                    urlConnection.connect();
-
-                    return new Result(urlConnection.getResponseCode(),"");
-                }
-                catch (Exception ex) {
-                    ex.printStackTrace();
-                    return new Result(HttpURLConnection.HTTP_INTERNAL_ERROR,ex.getMessage());
-                }
-            }
-            catch (MalformedURLException ex) {
-                Log.e("httptest", Log.getStackTraceString(ex));
-                return new Result(HttpURLConnection.HTTP_BAD_REQUEST,ex.getMessage());
-            }
-            catch (IOException ex) {
-                Log.e("httptest", Log.getStackTraceString(ex));
-                return new Result(HttpURLConnection.HTTP_FORBIDDEN,ex.getMessage());
-            }
-            finally {
-                try {
-                    urlConnection.disconnect();
-                } catch (Exception e) {
-                    e.printStackTrace(); //If you want further info on failure...
-                }
-            }
-        }
-
-    }
-
-
-    private class httpGetUserByDNITask extends AsyncTask<String,Void,httpGetUserByDNITask.Result> {
-
-        @Override
-        protected Result doInBackground(String... url) {
-            Result output;
-            output = httpGetData(url[0]);
-            return output;
-        }
-
-        public class Result {
-
-            public JSONArray Response;
-            public int ResultCode;
-            public String Message;
-
-            public Result(JSONArray Resp, int code, String Mess) {
-                Response = Resp;
-                ResultCode = code;
-                Message = Mess;
-            }
-
-        }
-
-        @Override
-        protected void onPostExecute(Result R) {
-            if (R.ResultCode == HttpURLConnection.HTTP_OK) {
-                //JsonText.setText(R.Response.toString());
-                if ( R!= null) {
-                    try {
-                        JSONObject obj=R.Response.getJSONObject(0);
-                        if (obj!=null) {
-
-                            nombre.setText(obj.getString("nombre"));
-                            apellido.setText(obj.getString("apellido1"));
-                            telefono.setText(obj.getString("DNI"));
-                            SIP.setText(obj.getString("permisos"));
-                            Toast.makeText(getApplicationContext(), "El dato ha sido traido correctamente", Toast.LENGTH_LONG).show();
-                        }
-
-                    } catch (JSONException e) {
-
-                        Toast.makeText(getApplicationContext(), "No se ha podido realizar la consulta", Toast.LENGTH_LONG).show();
-
-                    }
-
-                } else{
-                    Toast.makeText(getApplicationContext(), "La consulta no ha devuelto ningun resultado", Toast.LENGTH_LONG).show();
-                }
-            } else {
-                Toast.makeText(getApplicationContext(), "No se ha podido realizarla consulta", Toast.LENGTH_LONG).show();
-            }
-        }
-
-
-        private Result httpGetData(String mURL) {
-
-            HttpURLConnection urlConnection = null;
-            JSONArray ja = null;
-            Result Res=null;
-
-            try {
-
-                URL url = new URL(mURL);
-                urlConnection = (HttpURLConnection) url.openConnection();
-
-                try {
-                    urlConnection.setRequestMethod("GET");
-                    urlConnection.setDoOutput(true);
-                    urlConnection.connect();
-
-
-                    BufferedReader in = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
-
-                    String line;
-
-
-                    while ((line = in.readLine()) != null) {
-                        try {
-                            ja = new JSONArray(line);
-                            Res= new Result(ja, HttpURLConnection.HTTP_OK, null);
-                        } catch (JSONException ex) {
-                            ex.printStackTrace();
-                            Toast.makeText(getApplicationContext(), "Error recuperando la respuesta del servidor.", Toast.LENGTH_LONG).show();
-                            Res= new Result(null, HttpURLConnection.HTTP_BAD_REQUEST, ex.getMessage());
-                        }
-                    }
-                }
-                //return new Result(urlConnection.getResponseCode(),"");
-                catch (Exception ex) {
-                    ex.printStackTrace();
-                    Toast.makeText(getApplicationContext(), "Error accediendo al servidor.", Toast.LENGTH_LONG).show();
-                    Res= new Result(null, HttpURLConnection.HTTP_BAD_REQUEST, ex.getMessage());
-                }
-
-            } catch (MalformedURLException ex) {
-                Log.e("httptest", Log.getStackTraceString(ex));
-                Res=new Result(null, HttpURLConnection.HTTP_NOT_ACCEPTABLE, ex.getMessage());
-                //return new Result(HttpURLConnection.HTTP_BAD_REQUEST,ex.getMessage());
-            } catch (IOException ex) {
-                Log.e("httptest", Log.getStackTraceString(ex));
-                Res= new Result(null, HttpURLConnection.HTTP_NOT_ACCEPTABLE, ex.getMessage());
-                //return new Result(HttpURLConnection.HTTP_FORBIDDEN,ex.getMessage());
-
-            } finally {
-
-                urlConnection.disconnect();
-                return Res;
-            }
-        }
-
-    }
 
 
 }

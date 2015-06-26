@@ -4,14 +4,30 @@ import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.EditText;
 
 
 public class DetailsActivity extends ActionBarActivity {
+
+    private EditText DNI=null;
+    private EditText nombre=null;
+    private EditText apellido=null;
+    private EditText telefono=null;
+    private EditText SIP=null;
+    private EditText JsonText=null;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.details);
+
+        DNI=(EditText)findViewById(R.id.editTextDNI);
+        nombre=(EditText)findViewById(R.id.editTextNombre);
+        apellido=(EditText)findViewById(R.id.editTextApellido);
+        telefono=(EditText)findViewById(R.id.editTextTelefono);
+        SIP=(EditText)findViewById(R.id.editTextSIP);
+
     }
 
     @Override
