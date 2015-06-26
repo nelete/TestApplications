@@ -82,8 +82,6 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         return super.onOptionsItemSelected(item);
     }
 
-
-
     private boolean NetworkIsConnected(){
 
         ConnectivityManager connMgr = (ConnectivityManager)getSystemService(CONNECTIVITY_SERVICE);
@@ -123,20 +121,13 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
     }
 
+    private void Clean(){
 
-   //Métodos Privados
-
-    private void InsertarUsuario(String numDNI,String nomb,String ape,String telef ,String numSIP){
-        boolean Conected=NetworkIsConnected();
-        if (Conected) {
-
-            httpSendDataTask Request=new httpSendDataTask();
-
-            Request.execute("http://10.0.2.2/prueba/registrarUsuario.php?DNI=" + numDNI +
-                    "&Nombre=" + nomb + "&Apellido=" + ape +
-                    "&Telefono=" + telef + "&SIP=" + numSIP);
-
-        }
+        nombre.setText("");
+        apellido.setText("");
+        SIP.setText("");
+        telefono.setText("");
+        //JsonText.setText("");
     }
 
     private void EnlazarControlesXML(){
@@ -158,6 +149,22 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         btnConsultar.setOnClickListener(this);
         DNI.setOnFocusChangeListener(this);
 
+    }
+
+
+    //Métodos Privados
+
+    private void InsertarUsuario(String numDNI,String nomb,String ape,String telef ,String numSIP){
+        boolean Conected=NetworkIsConnected();
+        if (Conected) {
+
+            httpSendDataTask Request=new httpSendDataTask();
+
+            Request.execute("http://10.0.2.2/prueba/registrarUsuario.php?DNI=" + numDNI +
+                    "&Nombre=" + nomb + "&Apellido=" + ape +
+                    "&Telefono=" + telef + "&SIP=" + numSIP);
+
+        }
     }
 
 
@@ -214,14 +221,6 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         }
     }
 
-    private void Clean(){
-
-        nombre.setText("");
-        apellido.setText("");
-        SIP.setText("");
-        telefono.setText("");
-        //JsonText.setText("");
-    }
 
 
     private class httpGetUsersTask extends AsyncTask<String,Void,httpGetUsersTask.Result> {
